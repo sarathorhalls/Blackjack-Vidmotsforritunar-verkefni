@@ -31,7 +31,7 @@ public class BlackjackApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         setStigatafla(new Stigatafla());
-        FXMLLoader fxmlLoader = new FXMLLoader(BlackjackApplication.class.getResource("tuttuguOgEinn-view.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("tuttuguOgEinn-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 1280, 720);
         stage.setTitle("Sara's Blackjack");
         stage.setScene(scene);

@@ -1,5 +1,15 @@
 package hi.verkefni.vidmot;
 
+import java.net.URL;
+import java.util.ResourceBundle;
+
+import org.tinylog.Logger;
+
+import hi.verkefni.vinnsla.Leikmadur;
+import hi.verkefni.vinnsla.LeikmennManager;
+import hi.verkefni.vinnsla.SpilV;
+import hi.verkefni.vinnsla.Stig;
+
 /******************************************************************************
  *  Nafn    : Sara Þórhallsdóttir
  *  T-póstur: kgt2@hi.is
@@ -31,15 +41,10 @@ import javafx.scene.shape.Path;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
 
-import java.net.URL;
-import java.util.ResourceBundle;
-
-import hi.verkefni.vinnsla.Leikmadur;
-import hi.verkefni.vinnsla.LeikmennManager;
-import hi.verkefni.vinnsla.SpilV;
-import hi.verkefni.vinnsla.Stig;
-
 public class BlackjackController implements Initializable {
+    private static final String BET = "Bet:    ";
+    private static final String TOTAL = "Total: ";
+
     // FXML Tilviksbreytur
     @FXML
     private GridPane mainGridPane;
@@ -69,20 +74,22 @@ public class BlackjackController implements Initializable {
     // Java tilviksbreytur
     private LeikmennManager leikmennManager;
     private Leikmadur currentLeikmadur;
-    private boolean nextRound;
-    private boolean compareToDealer;
+    private boolean allGameOver;
+    private boolean showLate;
 
     // Tilviksbreytur til að breyta litnum á tökkunum þegar ýtt er á þá
-    private final String buttonStyleParams = "-fx-border-width: 3px; -fx-border-color: black; -fx-border-radius: 3px;";
-    private final String buttonColor = "#bd132f";
-    private final String buttonPressedColor = "#9c1026";
+    private static final String BUTTONSTYLEPARAMS = "-fx-border-width: 3px; -fx-border-color: black; -fx-border-radius: 3px;";
+    private static final String BUTTONCOLOR = "#bd132f";
+    private static final String BUTTONPRESSEDCOLOR = "#9c1026";
 
     // Tilviksbreytur fyrir animationQueue
     private Node[] animationQueue;
     private Path[] animationPathQueue;
     private boolean animationQueueBool;
     private int animationQueuePos;
-    private ObservableList<Spil> playerCards;
+    private ObservableList<Spil> leikmadurCards;
+
+    /****************************** RESETING STATES ******************************/
 
     /**
      * Keyrist bæði þegar Initalize() kallar í það þegar leikurinn byrjar en líka
@@ -96,8 +103,8 @@ public class BlackjackController implements Initializable {
     public void NewGameHandler() {
         // Frumstillum java tilviksbreytur
         currentLeikmadur = leikmennManager.newGame();
-        nextRound = false;
-        compareToDealer = false;
+        allGameOver = false;
+        showLate = false;
 
         // Hreinsa spilin af skjánum ef þú varst að klára leik
         if (animationQueue != null) {
@@ -114,7 +121,7 @@ public class BlackjackController implements Initializable {
             }
         }
 
-        playerCards = FXCollections.observableArrayList();
+        leikmadurCards = FXCollections.observableArrayList();
 
         // Frumstillum animationQueue tilviksbreyturnar
         animationQueue = new Node[24];
@@ -125,6 +132,8 @@ public class BlackjackController implements Initializable {
         // Tekur burt textan um hvort leikmaðurinn hafi unnið eða ekki
         bigTextVisibility();
 
+        fxDealerTotal.setText("0");
+
         // Frumstillir takkana neðst
         showPlayButtons(true);
 
@@ -132,13 +141,17 @@ public class BlackjackController implements Initializable {
         addCardToHand(true);
 
         // Leikmadurinn fær spilin sín
-        newPlayerGame();
+        newLeikmadurGame();
     }
 
-    private void newPlayerGame() {
+    private void newLeikmadurGame() {
         // Setur bet gildin
-        fxBetTotal.setText("Total: " + String.valueOf(currentLeikmadur.getBetTotal()));
-        fxCurrentBet.setText("Bet:    " + String.valueOf(leikmennManager.getBetAmount()));
+        fxBetTotal.setText(TOTAL + String.valueOf(currentLeikmadur.getBetTotal()));
+        fxCurrentBet.setText(BET + String.valueOf(leikmennManager.getBetAmount()));
+
+        // Uppfærir textan á skjánum fyrir samtals gildi spilana hjá dealerinum og
+        // leikmanninum
+        fxPlayerTotal.setText("0");
 
         // Setur nafn Leikmannsins
         fxPlayerName.setText(currentLeikmadur.getNafn());
@@ -146,28 +159,172 @@ public class BlackjackController implements Initializable {
         // Gefur leikmanninum tvö spil
         addCardToHand(false);
         addCardToHand(false);
-
-        // Uppfærir textan á skjánum fyrir samtals gildi spilana hjá dealerinum og
-        // leikmanninum
-        fxDealerTotal.setText(Integer.toString(leikmennManager.getDealer().getSamtals()));
-        fxPlayerTotal.setText(Integer.toString(currentLeikmadur.getSamtals()));
+        disableUserActions(true);
     }
 
-    private void newRound() {
+    // private void newRound() {
+    // if (leikmennManager.getDealer().getSamtals() < 17) {
+    // addCardToHand(true);
+    // fxDealerTotal.setText(Integer.toString(leikmennManager.getDealer().getSamtals()));
+    // if (leikmennManager.getAllStanding()) {
+    // newRound();
+    // }
+    // } else if (leikmennManager.getDealer().getSamtals() > 21) {
+    // compareToDealer = true;
+    // } else {
+    // System.out.println("correctTriger");
+    // compareToDealer = true;
+    // }
+    // canChangeRound = false;
+    // }
+
+    /****************************** STATE MANAGEMENT ******************************/
+
+    private void leikmadurGerir() {
+        /*
+         * if (!checkCanDo() && !leikmennManager.getCurrentLeikmadur().isGameOver()) {
+         * checkIfAllGameOver();
+         * return;
+         * }
+         */
+        checkIfCurrentLeikmadurGameOver();
+    }
+
+    private boolean checkCanDo() {
+        Logger.debug("Check if {} can do", leikmennManager.getCurrentLeikmadur());
+        return leikmennManager.getCurrentLeikmadur().isCanDo();
+    }
+
+    private boolean checkIfAllGameOver() {
+        Logger.debug("Check if all gameOver, called from {}", leikmennManager.getCurrentLeikmadur());
+        if (leikmennManager.isGamefinished()) {
+            checkIfAnyStand();
+            return true;
+        }
+        checkIfOtherLeikmadurCanDo();
+        return false;
+    }
+
+    private boolean checkIfCurrentLeikmadurGameOver() {
+        Logger.debug("Check if {} gameOver", leikmennManager.getCurrentLeikmadur());
+        if (leikmennManager.getCurrentLeikmadur().isStand()) {
+            leikmennManager.getCurrentLeikmadur().setGameOver(true);
+            checkIfAllGameOver();
+            return true;
+        }
+        if (checkIfCurrentLeikmadurWinOrLose()) {
+            return true;
+        }
+        checkIfOtherLeikmadurCanDo();
+        return false;
+    }
+
+    private boolean checkIfCurrentLeikmadurWinOrLose() {
+        Logger.debug("Check if {} WinOrLose", leikmennManager.getCurrentLeikmadur());
+        if (leikmennManager.getCurrentLeikmadur().getSamtals() > 21) {
+            lose(true);
+            Logger.debug("{} busted", leikmennManager.getCurrentLeikmadur());
+            if (allGameOver) {
+                return true;
+            }
+            leikmennManager.getCurrentLeikmadur().setGameOver(true);
+            checkIfAllGameOver();
+            return true;
+        }
+        if (leikmennManager.getDealer().isGameOver()) {
+            if (leikmennManager.getDealer().getSamtals() > 21) {
+                win();
+                checkIfAllGameOver();
+                return true;
+            }
+            compareCurrentLeikmadurToDealer();
+            checkIfAllGameOver();
+            if (allGameOver) {
+                return true;
+            }
+            leikmennManager.getCurrentLeikmadur().setGameOver(true);
+            return true;
+        }
+        return false;
+    }
+
+    private void compareCurrentLeikmadurToDealer() {
+        Logger.info("comparing {} to dealer", leikmennManager.getCurrentLeikmadur());
+        if (leikmennManager.getDealer().getSamtals() > leikmennManager.getCurrentLeikmadur().getSamtals()) {
+            lose(false);
+            return;
+        }
+        win();
+    }
+
+    private boolean checkIfOtherLeikmadurCanDo() {
+        Logger.debug("Check if other Leikmadur than {} can do", leikmennManager.getCurrentLeikmadur());
+        if (leikmennManager.isOtherLeikmadursStillCanDo()) {
+            changeLeikmadur();
+            return true;
+        }
+        changeRound();
+        return false;
+    }
+
+    private boolean checkIfAnyStand() {
+        Logger.debug("Check if any stand, called from {}", leikmennManager.getCurrentLeikmadur());
+        if (leikmennManager.getAnyStanding()) {
+            showLate = true;
+            checkIfCurrentLeikmadurStand();
+            return true;
+        }
+        showPlayButtons(false);
+        return false;
+    }
+
+    private boolean checkIfCurrentLeikmadurStand() {
+        Logger.debug("Check if {} stand", leikmennManager.getCurrentLeikmadur());
+        if (leikmennManager.getCurrentLeikmadur().isStand()) {
+            leikmennManager.getCurrentLeikmadur().setStand(false);
+            allGameOver = true;
+            checkDealerCanPlay();
+            return true;
+        }
+        changeLeikmadur();
+        checkIfCurrentLeikmadurStand();
+        return false;
+    }
+
+    private void changeRound() {
+        if (checkCanDo()) {
+            return;
+        }
+        Logger.info("Changed round from {}", leikmennManager.getCurrentLeikmadur());
+        leikmennManager.setAllLeikmennCanDo();
+        checkDealerCanPlay();
+    }
+
+    private boolean checkDealerCanPlay() {
+        Logger.debug("Check if dealer can play, called from {}", leikmennManager.getCurrentLeikmadur());
+        if (leikmennManager.getDealer().isGameOver()) {
+            Logger.debug("dealerWasGameOver, with allGameOver = {}, called from {}", allGameOver,
+                    leikmennManager.getCurrentLeikmadur());
+            if (allGameOver) {
+                checkIfCurrentLeikmadurWinOrLose();
+            }
+            return false;
+        }
         if (leikmennManager.getDealer().getSamtals() < 17) {
             addCardToHand(true);
-            fxDealerTotal.setText(Integer.toString(leikmennManager.getDealer().getSamtals()));
-            if (leikmennManager.getAllStanding()) {
-                newRound();
-            }
-        } else if (leikmennManager.getDealer().getSamtals() > 21) {
-            compareToDealer = true;
-        } else {
-            System.out.println("correctTriger");
-            compareToDealer = true;
         }
-        nextRound = false;
+        if (leikmennManager.getDealer().getSamtals() >= 17) {
+            Logger.debug("dealer set gameOver, called from {}", leikmennManager.getCurrentLeikmadur());
+            leikmennManager.getDealer().setGameOver(true);
+        }
+        if (allGameOver) {
+            Logger.debug("dealer check called again because allGameOver");
+            checkDealerCanPlay();
+        }
+        return true;
     }
+
+    /******************** HANDLES INPUT FROM JAVAFX BUTTONS ********************/
 
     /**
      * Keyrist þegar leikmaðurinn ýtir á HIT
@@ -178,14 +335,11 @@ public class BlackjackController implements Initializable {
      */
     @FXML
     public void HitHandler() {
-        int newSamtals = addCardToHand(false);
-        fxPlayerTotal.setText(Integer.toString(newSamtals));
-        if (newSamtals > 21) {
-            lose(true);
-            return;
+        leikmennManager.getCurrentLeikmadur().setCanDo(false);
+        addCardToHand(false);
+        if (leikmennManager.getCurrentLeikmadur().getSamtals() > 21) {
+            leikmennManager.getCurrentLeikmadur().setGameOver(true);
         }
-        nextRound = true;
-        delay(2500, () -> changePlayer());
     }
 
     /**
@@ -195,16 +349,9 @@ public class BlackjackController implements Initializable {
      */
     @FXML
     public void StandHandler() {
-        currentLeikmadur.setStand(true);
-        changePlayer();
-        if (leikmennManager.isGamefinished()) {
-            while (leikmennManager.getDealer().getSamtals() < 17) {
-                addCardToHand(true);
-                fxDealerTotal.setText(Integer.toString(leikmennManager.getDealer().getSamtals()));
-            }
-        }
-        // gerir það svo að calculateWinner() functionið keyrist þegar dealerinn er búin
-        // að fá seinasta spilið í hendina
+        leikmennManager.getCurrentLeikmadur().setStand(true);
+        leikmennManager.getCurrentLeikmadur().setCanDo(false);
+        leikmadurGerir();
     }
 
     /**
@@ -215,16 +362,19 @@ public class BlackjackController implements Initializable {
      */
     @FXML
     public void DDHandler() {
-        int newSamtals = addCardToHand(false);
-        fxPlayerTotal.setText(Integer.toString(newSamtals));
+        leikmennManager.getCurrentLeikmadur().setCanDo(false);
+        leikmennManager.getCurrentLeikmadur().setStand(true);
+        leikmennManager.getCurrentLeikmadur().setDd(true);
         fxCurrentBet.setText(String.valueOf(leikmennManager.getBetAmount() * 2));
+        addCardToHand(false);
         // Breytir útreikningunum fyrir "bet" í lokinn
-        currentLeikmadur.setDd(true);
-        if (newSamtals > 21) {
-            lose(true);
-            return;
-        }
-        StandHandler();
+    }
+
+    @FXML
+    public void SurrenderHandler() {
+        leikmennManager.getCurrentLeikmadur().setCanDo(false);
+        leikmennManager.getCurrentLeikmadur().setGameOver(true);
+        // TODO: figure this shit out
     }
 
     /**
@@ -238,6 +388,8 @@ public class BlackjackController implements Initializable {
         System.exit(0);
     }
 
+    /********** MAKES BUTTONS CHANGE COLOR WHEN PRESSED **********/
+
     /**
      * Keyrist þegar leikmaðurinn ýtir niður á einhvern af tökkunum neðst
      * breytir litnum á takkanum sem ýtt var á til að takarnir líti út fyrir
@@ -248,7 +400,7 @@ public class BlackjackController implements Initializable {
     @FXML
     public void ButtonColorChangerP(MouseEvent e) {
         Button hitButton = (Button) e.getSource();
-        hitButton.setStyle("-fx-background-color: " + buttonPressedColor + ";" + buttonStyleParams);
+        hitButton.setStyle("-fx-background-color: " + BUTTONPRESSEDCOLOR + ";" + BUTTONSTYLEPARAMS);
     }
 
     /**
@@ -261,8 +413,10 @@ public class BlackjackController implements Initializable {
     @FXML
     public void ButtonColorChangerR(MouseEvent e) {
         Button hitButton = (Button) e.getSource();
-        hitButton.setStyle("-fx-background-color: " + buttonColor + ";" + buttonStyleParams);
+        hitButton.setStyle("-fx-background-color: " + BUTTONCOLOR + ";" + BUTTONSTYLEPARAMS);
     }
+
+    /******************** ANIMATES CARDS ********************/
 
     /**
      * Helper-function til að bæta spili við hendina hjá völdum leikmanni og
@@ -272,8 +426,11 @@ public class BlackjackController implements Initializable {
      * @return skilar nýju samtals tölunni
      */
     private int addCardToHand(boolean isDealer) {
+        // Slökkvum á user input frá neðri tökkunum
+        disableUserActions(true);
+
         // Drögum spil og setjum í samtals
-        SpilV card = leikmennManager.addCardToPlayer(isDealer);
+        SpilV card = leikmennManager.addCardToLeikmadur(isDealer);
 
         // Búum til nýtt spil út frá spil klasanum
         Spil cardView = new Spil(card);
@@ -290,7 +447,7 @@ public class BlackjackController implements Initializable {
         if (!isDealer) {
             lt = new LineTo(-700 + 40 * currentLeikmadur.getCardsInPlayPos(), 480);
             int offset = leikmennManager.getCardOffset(currentLeikmadur) + currentLeikmadur.getCardsInPlayPos() - 1;
-            playerCards.add(offset, cardView);
+            leikmadurCards.add(offset, cardView);
         } else {
             lt = new LineTo(-700 + 40 * leikmennManager.getDealer().getCardsInPlayPos(), 130);
         }
@@ -327,10 +484,6 @@ public class BlackjackController implements Initializable {
         if (animationQueueBool) {
             animationQueueBool = false;
 
-            // Falið heildar tölurnar þangað til að öll spilin eru komin á sinn stað
-            fxDealerTotal.setVisible(false);
-            fxPlayerTotal.setVisible(false);
-
             // Bætir spilinu við gluggan
             mainGridPane.add(toAnimate, 3, 1);
 
@@ -351,10 +504,13 @@ public class BlackjackController implements Initializable {
                         animateCards(animationPathQueue[animationPos + 1], animationQueue[animationPos + 1],
                                 animationPos + 1);
                     } else {
-                        fxDealerTotal.setVisible(true);
-                        fxPlayerTotal.setVisible(true);
-                        if (compareToDealer) {
-                            calculateWinner();
+                        fxDealerTotal.setText(Integer.toString(leikmennManager.getDealer().getSamtals()));
+                        fxPlayerTotal.setText(Integer.toString(leikmennManager.getCurrentLeikmadur().getSamtals()));
+                        disableUserActions(false);
+                        leikmadurGerir();
+                        if (showLate && leikmennManager.getCurrentLeikmadur().isGameOver()) {
+                            bigTextVisibility();
+                            showLate = false;
                         }
                     }
                 }
@@ -363,6 +519,8 @@ public class BlackjackController implements Initializable {
         }
     }
 
+    /******************** SHOW VARIOUS SCREEN ELEMENTS ********************/
+
     /**
      * Helper-function sem keyrir þegar leikmaðurinn tapar og
      * uppfærir alla viðmótshluti til að sýna það
@@ -370,24 +528,21 @@ public class BlackjackController implements Initializable {
      * @param bust segir functioninu hvort leikmaðurinn hafi sprungið (BUST)
      */
     private void lose(boolean bust) {
-        currentLeikmadur.setCanDo(false);
-        currentLeikmadur.setStand(true);
+        // currentLeikmadur.setCanDo(false);
+        // currentLeikmadur.setStand(true);
         leikmennManager.lose();
         BlackjackApplication.getStigatafla().add(new Stig(currentLeikmadur.getNafn(), currentLeikmadur.getBetTotal()));
-        fxBetTotal.setText("Total: " + String.valueOf(currentLeikmadur.getBetTotal()));
-        fxCurrentBet.setText("Bet:    ");
+        fxBetTotal.setText(TOTAL + String.valueOf(currentLeikmadur.getBetTotal()));
+        fxCurrentBet.setText(BET);
         if (bust) {
             currentLeikmadur.setCondition("BUST");
-            bigTextVisibility();
         } else {
             currentLeikmadur.setCondition("LOST");
+        }
+        if (!showLate) {
             bigTextVisibility();
         }
-        if (leikmennManager.isGamefinished()) {
-            showPlayButtons(false);
-            return;
-        }
-        delay(3000, () -> changePlayer());
+        // delay(3000, this::changeLeikmadur);
     }
 
     /**
@@ -395,19 +550,38 @@ public class BlackjackController implements Initializable {
      * uppfærir alla viðmótshluti til að sýna það
      */
     private void win() {
-        currentLeikmadur.setCanDo(false);
-        currentLeikmadur.setStand(true);
+        // currentLeikmadur.setCanDo(false);
+        // currentLeikmadur.setStand(true);
         leikmennManager.win();
         BlackjackApplication.getStigatafla().add(new Stig(currentLeikmadur.getNafn(), currentLeikmadur.getBetTotal()));
-        fxBetTotal.setText("Total: " + String.valueOf(currentLeikmadur.getBetTotal()));
-        fxCurrentBet.setText("Bet:    ");
+        fxBetTotal.setText(TOTAL + String.valueOf(currentLeikmadur.getBetTotal()));
+        fxCurrentBet.setText(BET);
         currentLeikmadur.setCondition("WIN");
-        bigTextVisibility();
-        if (leikmennManager.isGamefinished()) {
-            showPlayButtons(false);
+        if (!showLate) {
+            bigTextVisibility();
+        }
+        /*
+         * if (leikmennManager.isGamefinished()) {
+         * showPlayButtons(false);
+         * return;
+         * }
+         * delay(3000, this::changeLeikmadur);
+         */
+    }
+
+    private void disableUserActions(boolean disable) {
+        fxPlayButtons.setDisable(disable);
+        if (disable) {
+            for (Node button : fxPlayButtons.getChildren()) {
+                button.setOpacity(0.8);
+                button.setStyle("-fx-background-color: " + BUTTONPRESSEDCOLOR + ";" + BUTTONSTYLEPARAMS);
+            }
             return;
         }
-        delay(3000, () -> changePlayer());
+        for (Node button : fxPlayButtons.getChildren()) {
+            button.setOpacity(1);
+            button.setStyle("-fx-background-color: " + BUTTONCOLOR + ";" + BUTTONSTYLEPARAMS);
+        }
     }
 
     /**
@@ -449,18 +623,7 @@ public class BlackjackController implements Initializable {
 
     }
 
-    /**
-     * notar vinnurDealer functionið í Leikmaður klasanum og keyrir
-     * viðeigandi functions til að uppfæra viðmótið
-     */
-    private void calculateWinner() {
-        currentLeikmadur.setStand(false);
-        if (leikmennManager.getDealer().vinnurDealer(currentLeikmadur)) {
-            lose(false);
-        } else {
-            win();
-        }
-    }
+    /******************** CHANGEING PLAYER AFTER SET TIME ********************/
 
     private static void delay(long millis, Runnable toRunAfterDelay) {
         Task<Void> sleeper = new Task<Void>() {
@@ -470,6 +633,7 @@ public class BlackjackController implements Initializable {
                     Thread.sleep(millis);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                    Thread.currentThread().interrupt();
                 }
                 return null;
             }
@@ -478,67 +642,66 @@ public class BlackjackController implements Initializable {
         new Thread(sleeper).start();
     }
 
-    private void changePlayer() {
+    private void changeLeikmadur() {
+        // TODO: rewrite
         currentLeikmadur.setCanSurrender(false);
-        if ((leikmennManager.isRoundFinished() && nextRound)) {
-            newRound();
-        }
-        if (leikmennManager.getAllStanding() && !compareToDealer) {
-            newRound();
-            return;
-        }
-        if (leikmennManager.isGamefinished()) {
-            return;
-        }
+        /*
+         * if ((leikmennManager.isRoundFinished()) && changeRound) {
+         * // newRound();
+         * }
+         * if (leikmennManager.getAllStanding() && !compareToDealer) {
+         * // newRound();
+         * return;
+         * }
+         * if (leikmennManager.isGamefinished()) {
+         * return;
+         * }
+         */
         // Sýna spilinn hjá leikmanninum sem var að gera í smá tíma áður en skipt er
         // yfir
         // Fela spil leikmannsins sem var að gera
         int offset = leikmennManager.getCardOffset(currentLeikmadur);
-        System.out.println("cardArrayList:");
-        for (Spil card : playerCards) {
-            System.out.print(card + " ");
-        }
-        System.out.println();
-        System.out.println("taking out of play:");
         for (int i = 0; i < currentLeikmadur.getCardsInPlayPos(); i++) {
-            playerCards.get(i + offset).setVisible(false);
-            System.out.print(playerCards.get(i + offset) + " ");
+            leikmadurCards.get(i + offset).setVisible(false);
         }
 
         // Skipta um leikmann
-        currentLeikmadur = leikmennManager.changePlayer();
-        if ((!currentLeikmadur.isCanDo() || currentLeikmadur.isStand()) && !leikmennManager.getAllStandingAndCanDo()
-                && !compareToDealer) {
-            changePlayer();
-            return;
-        }
+        currentLeikmadur = leikmennManager.changeLeikmadur();
+        /*
+         * if ((!currentLeikmadur.isCanDo() || currentLeikmadur.isStand()) &&
+         * !leikmennManager.getAllStandingAndCanDo()
+         * && !compareToDealer) {
+         * changeLeikmadur();
+         * return;
+         * }
+         */
 
         // Sýna spilin hjá leikmanninum sem var verið að breyta yfir í
         offset = leikmennManager.getCardOffset(currentLeikmadur);
-        System.out.println();
-        System.out.println("putting into play:");
         for (int i = currentLeikmadur.getCardsInPlayPos(); i > 0; i--) {
-            playerCards.get(i + offset - 1).setVisible(true);
-            System.out.print(playerCards.get(i + offset - 1) + " ");
+            leikmadurCards.get(i + offset - 1).setVisible(true);
         }
-        System.out.println();
         fxPlayerName.setText(currentLeikmadur.getNafn());
-        fxBetTotal.setText("Total: " + String.valueOf(currentLeikmadur.getBetTotal()));
+        fxBetTotal.setText(TOTAL + String.valueOf(currentLeikmadur.getBetTotal()));
         fxPlayerTotal.setText(Integer.toString(currentLeikmadur.getSamtals()));
         bigTextVisibility();
         if (currentLeikmadur.isCanSurrender()) {
-            newPlayerGame();
+            newLeikmadurGame();
         }
-        if (compareToDealer && currentLeikmadur.isStand()) {
-            calculateWinner();
-        }
+        /*
+         * if (compareToDealer && currentLeikmadur.isStand()) {
+         * calculateWinner();
+         * }
+         */
     }
+
+    /******************** CALLED WHEN STATRING THE GAME ********************/
 
     /**
      * Keyrist þegar leikurinn byrjar
      * býr til og sýnir TextInputDialog til að spyrja Leikmanninn til nafns og býr
-     * síðan til leikmennina tvö (dealer og player) og setur nafnið sem hann fékk
-     * frá Dialoginu í player leikmanninn
+     * síðan til leikmennina tvö (dealer og leikmadur) og setur nafnið sem hann fékk
+     * frá Dialoginu í Leikmadur leikmanninn
      * frumstillir síðan bet og keyrir NewGameHandler() til að byrja leikinn
      * 
      * @param location

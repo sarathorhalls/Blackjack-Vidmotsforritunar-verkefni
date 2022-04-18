@@ -8,10 +8,6 @@ package hi.verkefni.vidmot;
  *  functionið í BlackjackController 
  *****************************************************************************/
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-
 import hi.verkefni.vinnsla.SpilV;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;

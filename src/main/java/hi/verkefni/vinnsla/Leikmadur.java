@@ -21,8 +21,9 @@ public class Leikmadur implements LeikmadurInterface {
     private Pane cardPane;
     private boolean canSurrender;
     private boolean canDo;
-    private boolean dd;
+    private boolean gameOver;
     private boolean stand;
+    private boolean dd;
 
     /**
      * Constructor
@@ -71,10 +72,7 @@ public class Leikmadur implements LeikmadurInterface {
      * @return hvort dealerinn hafi unnið
      */
     public boolean vinnurDealer(LeikmadurInterface player) {
-        if (this.cardTotal > player.getSamtals() && this.cardTotal < 22) {
-            return true;
-        }
-        return false;
+        return this.cardTotal > player.getSamtals() && this.cardTotal < 22;
     }
 
     /**
@@ -100,6 +98,7 @@ public class Leikmadur implements LeikmadurInterface {
         cardTotal = 0;
         canSurrender = true;
         canDo = true;
+        gameOver = false;
         dd = false;
         stand = false;
     }
@@ -159,9 +158,7 @@ public class Leikmadur implements LeikmadurInterface {
      */
     public SpilV[] getCardsInPlay() {
         SpilV[] finalA = new SpilV[cardsInPlayPos];
-        for (int i = 0; i < cardsInPlayPos; i++) {
-            finalA[i] = cardsInPlay[i];
-        }
+        System.arraycopy(cardsInPlay, 0, finalA, 0, cardsInPlay.length);
         return finalA;
     }
 
@@ -188,6 +185,14 @@ public class Leikmadur implements LeikmadurInterface {
         this.canDo = canDo;
     }
 
+    public boolean isGameOver() {
+        return gameOver;
+    }
+
+    public void setGameOver(boolean gameOver) {
+        this.gameOver = gameOver;
+    }
+
     public int getBetTotal() {
         return betTotal;
     }
@@ -206,5 +211,9 @@ public class Leikmadur implements LeikmadurInterface {
 
     public void setStand(boolean stand) {
         this.stand = stand;
+    }
+
+    public String toString() {
+        return this.name;
     }
 }

@@ -3,12 +3,13 @@ package hi.verkefni.vinnsla;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import org.tinylog.Logger;
 
 public class Stigatafla {
     private static final String STIGATAFLAURL = "stigatafla.txt";
@@ -18,31 +19,24 @@ public class Stigatafla {
     private Stig currentPlayer2;
 
     public Stigatafla() {
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new InputStreamReader(getClass().getResource(STIGATAFLAURL).openStream()));
-            ArrayList<Stig> stigAL = new ArrayList<Stig>();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(getClass().getResource(STIGATAFLAURL).openStream()))) {
+            ArrayList<Stig> stigAL = new ArrayList<>();
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] splitLine = line.split("\\s+");
                 String nafn = splitLine[0];
-                int score = Integer.valueOf(splitLine[1]);
+                int score = Integer.parseInt(splitLine[1]);
                 stigAL.add(new Stig(nafn, score));
             }
             stigArray = new Stig[stigAL.size()];
             stigArray = stigAL.toArray(stigArray);
         } catch (FileNotFoundException e) {
-            System.err.println("File not found");
+            Logger.error("File not found");
             e.printStackTrace();
         } catch (IOException e) {
-            System.err.println("Error while reading file");
+            Logger.error("Error while reading file");
             e.printStackTrace();
-        } finally {
-            try {
-                reader.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -89,9 +83,7 @@ public class Stigatafla {
             }
             if (!found) {
                 Stig[] tempStigArray = new Stig[stigArray.length + 1];
-                for (int j = 0; j < stigArray.length; j++) {
-                    tempStigArray[j] = stigArray[j];
-                }
+                System.arraycopy(stigArray, 0, tempStigArray, 0, stigArray.length);
                 tempStigArray[stigArray.length] = currentPlayer1;
                 stigArray = tempStigArray;
             }
@@ -115,39 +107,29 @@ public class Stigatafla {
             }
             if (!found[0]) {
                 Stig[] tempStigArray = new Stig[stigArray.length + 1];
-                for (int j = 0; j < stigArray.length; j++) {
-                    tempStigArray[j] = stigArray[j];
-                }
+                System.arraycopy(stigArray, 0, tempStigArray, 0, stigArray.length);
                 tempStigArray[stigArray.length] = currentPlayer1;
                 stigArray = tempStigArray;
             }
             if (!found[1]) {
                 Stig[] tempStigArray = new Stig[stigArray.length + 1];
-                for (int j = 0; j < stigArray.length; j++) {
-                    tempStigArray[j] = stigArray[j];
-                }
+                System.arraycopy(stigArray, 0, tempStigArray, 0, stigArray.length);
                 tempStigArray[stigArray.length] = currentPlayer2;
                 stigArray = tempStigArray;
             }
         }
         Arrays.sort(stigArray);
-        BufferedWriter writer = null;
-        try {
-            writer = new BufferedWriter(new FileWriter(STIGATAFLAURL));
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(STIGATAFLAURL));) {
             for (int i = stigArray.length - 1; i >= 0; i--) {
                 writer.write(stigArray[i].toString());
                 writer.newLine();
             }
         } catch (FileNotFoundException e) {
+            Logger.error("File not found");
             e.printStackTrace();
         } catch (IOException e) {
+            Logger.error("Error while writing to file");
             e.printStackTrace();
-        } finally {
-            try {
-                writer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -158,7 +140,7 @@ public class Stigatafla {
     public static void main(String[] args) {
         Stigatafla test1 = new Stigatafla();
         for (Stig stig : test1.stigArray) {
-            System.out.println(stig);
+            Logger.info(stig);
         }
         test1.add(new Stig("Sara", 1300), new Stig("Sophie", 3000));
         test1.writeToFile();

@@ -1,5 +1,7 @@
 package hi.verkefni.vinnsla;
 
+import org.tinylog.Logger;
+
 public class LeikmennManager {
     private Leikmadur dealer;
     private Leikmadur[] leikmenn;
@@ -7,12 +9,10 @@ public class LeikmennManager {
     private int betAmount;
     private int currentlySelected;
 
-    public LeikmennManager(Leikmadur[] players, int betAmount, Leikmadur dealer) {
+    public LeikmennManager(Leikmadur[] leikmenn, int betAmount, Leikmadur dealer) {
         this.dealer = dealer;
-        leikmenn = new Leikmadur[players.length];
-        for (int i = 0; i < players.length; i++) {
-            leikmenn[i] = players[i];
-        }
+        this.leikmenn = new Leikmadur[leikmenn.length];
+        System.arraycopy(leikmenn, 0, this.leikmenn, 0, leikmenn.length);
         deck = new Stokkur();
         this.betAmount = betAmount;
         currentlySelected = 0;
@@ -27,7 +27,7 @@ public class LeikmennManager {
         return leikmenn[currentlySelected];
     }
 
-    public SpilV addCardToPlayer(boolean isDealer) {
+    public SpilV addCardToLeikmadur(boolean isDealer) {
         SpilV card = deck.dragaSpil();
         if (isDealer) {
             dealer.gefaSpil(card);
@@ -45,7 +45,7 @@ public class LeikmennManager {
         leikmenn[currentlySelected].changeTotal(betAmount);
     }
 
-    public Leikmadur changePlayer() {
+    public Leikmadur changeLeikmadur() {
         if (++currentlySelected >= leikmenn.length) {
             currentlySelected = 0;
         }
@@ -55,11 +55,23 @@ public class LeikmennManager {
     // Getters and setters
     public boolean isGamefinished() {
         for (Leikmadur leikmadur : leikmenn) {
-            if (leikmadur.isCanDo()) {
-                return false;
+            if (leikmadur.isGameOver()) {
+                return true;
             }
         }
-        return true;
+        return false;
+    }
+
+    public boolean isOtherLeikmadursStillCanDo() {
+        for (Leikmadur leikmadur : leikmenn) {
+            if (leikmadur == leikmenn[currentlySelected]) {
+                continue;
+            }
+            if (leikmadur.isCanDo()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean isRoundFinished() {
@@ -86,8 +98,17 @@ public class LeikmennManager {
             }
             counter += testAgainstLeikmadur.getCardsInPlayPos();
         }
-        System.err.println("counter overflow, leikmadur not found");
+        Logger.error("counter overflow, leikmadur not found");
         return counter;
+    }
+
+    public boolean getAnyStanding() {
+        for (Leikmadur leikmadur : leikmenn) {
+            if (leikmadur.isStand()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean getAllStanding() {
@@ -106,5 +127,11 @@ public class LeikmennManager {
             }
         }
         return true;
+    }
+
+    public void setAllLeikmennCanDo() {
+        for (Leikmadur leikmadur : leikmenn) {
+            leikmadur.setCanDo(true);
+        }
     }
 }

@@ -10,6 +10,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <javafx.version>17.0.1</javafx.version>
         <javafx.maven.plugin.version>0.0.8</javafx.maven.plugin.version>
+        <tinylog.version>2.3.2</tinylog.version>
     </properties>
     <dependencies>
         <dependency>
@@ -22,6 +23,16 @@
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <dependency>
+             <groupId>org.tinylog</groupId>
+             <artifactId>tinylog-api</artifactId>
+             <version>${tinylog.version}</version>
+         </dependency>
+         <dependency>
+             <groupId>org.tinylog</groupId>
+             <artifactId>tinylog-impl</artifactId>
+             <version>${tinylog.version}</version>
+         </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -41,13 +52,6 @@
                     <execution>
                         <id>default-cli</id>
                         <configuration>
-                            <stripDebug>true</stripDebug>
-                            <compress>2</compress>
-                            <noHeaderFiles>true</noHeaderFiles>
-                            <noManPages>true</noManPages>
-                            <launcher>BlackJack</launcher>
-                            <jlinkImageName>blackjack</jlinkImageName>
-                            <jlinkZipName>blackjackZip</jlinkZipName>
                             <mainClass>hi.verkefni/hi.verkefni.vidmot.BlackjackApplication</mainClass>
                         </configuration>
                     </execution>
