@@ -52,6 +52,13 @@
                     <execution>
                         <id>default-cli</id>
                         <configuration>
+                            <stripDebug>true</stripDebug>
+                            <compress>2</compress>
+                            <noHeaderFiles>true</noHeaderFiles>
+                            <noManPages>true</noManPages>
+                            <launcher>Blackjack.exe</launcher>
+                            <jlinkImageName>Blackjack</jlinkImageName>
+                            <jlinkZipName>BlackjackZip</jlinkZipName>
                             <mainClass>hi.verkefni/hi.verkefni.vidmot.BlackjackApplication</mainClass>
                         </configuration>
                     </execution>
