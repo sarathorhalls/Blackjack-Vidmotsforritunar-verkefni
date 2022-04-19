@@ -17,6 +17,8 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.text.Text;
 
 public class Spil extends AnchorPane {
+
+    // FXMl tilviksbreytur
     @FXML
     ImageView fxCardTegund1;
     @FXML

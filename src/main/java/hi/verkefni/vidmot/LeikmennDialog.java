@@ -1,5 +1,13 @@
 package hi.verkefni.vidmot;
 
+/******************************************************************************
+ *  Nafn    : Sara Þórhallsdóttir
+ *  T-póstur: kgt2@hi.is
+ *
+ *  Lýsing  : Sýnir dialog sem bæði tekur á móti user input fyrir nöfn 
+ *  leikmanna og sýnir stigatöfluna
+ *****************************************************************************/
+
 import java.io.IOException;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
@@ -59,9 +67,13 @@ public class LeikmennDialog extends DialogPane {
     @FXML
     private Label fxStig5;
 
+    // Constructor
     public LeikmennDialog() {
+        // Loader .fxml skjalinu
         load();
 
+        // Gerir það að leikmaðurinn geti ekki set nein gildi í "veð" textboð nema tölu
+        // á bilin 1-1000
         UnaryOperator<Change> integerFilter = change -> {
             String newText = change.getControlNewText();
             if (newText.matches("(1000|([1-9][0-9]?[0-9]?))")) {
@@ -69,8 +81,6 @@ public class LeikmennDialog extends DialogPane {
             }
             return null;
         };
-
-        fxVirkurTooltip.setShowDelay(Duration.millis(100));
 
         fxVed.setTextFormatter(new TextFormatter<Integer>(new IntegerStringConverter(), 100, integerFilter));
         Stig[] stigatafla = new Stigatafla().getStigArray();
@@ -80,6 +90,10 @@ public class LeikmennDialog extends DialogPane {
             stigatafla = tempTafla;
         }
 
+        // Styttir tíman þangað til að tooltipið er sýnt
+        fxVirkurTooltip.setShowDelay(Duration.millis(100));
+
+        // Sýnir "entries" í stigatöflunni á viðmótinu
         switch (stigatafla.length) {
             case 0:
                 fxStig1.setVisible(false);
@@ -101,6 +115,7 @@ public class LeikmennDialog extends DialogPane {
                 break;
         }
 
+        // Bætir "entries" við stigatöfluna á viðmótinu
         switch (stigatafla.length) {
             case 5:
                 fxStig5.setText(String.valueOf(stigatafla[4].getScore()));
@@ -122,6 +137,9 @@ public class LeikmennDialog extends DialogPane {
         }
     }
 
+    /**
+     * Loadar .fxml skjalinu
+     */
     private void load() {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("leikmennDialog-view.fxml"));
         fxmlLoader.setRoot(this); // rótin á viðmótstrénu sett hér
@@ -133,6 +151,9 @@ public class LeikmennDialog extends DialogPane {
         }
     }
 
+    /**
+     * Leyfir leikmanni að skrifa í seinni nafns reytinn ef checkað er í checkboxið
+     */
     @FXML
     public void fxcCeckboxHandler() {
         if (fxCheckbox.isSelected()) {
@@ -144,12 +165,23 @@ public class LeikmennDialog extends DialogPane {
         fxLeikmadur2Label.setDisable(true);
     }
 
+    /**
+     * Sýnir dialogið
+     * 
+     * @return skilar nöfnum leikmanna og hversu mikið á að veðja í hvert skipti
+     */
     public String[] showDialog() {
         Dialog<ButtonType> d = new Dialog<>();
         d.setDialogPane(this);
         return birtaLeikmennDialog(d);
     }
 
+    /**
+     * Sýnir dialogið og bíður eftir user input
+     * 
+     * @param d
+     * @return skilar nöfnum leikmanna og hversu mikið á að veðja í hvert skipti
+     */
     private String[] birtaLeikmennDialog(Dialog<ButtonType> d) {
         Optional<ButtonType> utkoma = d.showAndWait();
         if (utkoma.isPresent() && utkoma.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {

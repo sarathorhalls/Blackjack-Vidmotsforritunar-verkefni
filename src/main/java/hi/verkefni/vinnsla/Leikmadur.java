@@ -105,6 +105,12 @@ public class Leikmadur implements LeikmadurInterface {
         surrendered = false;
     }
 
+    /**
+     * Breytir samtals fyrir leikmanninn.
+     * breytir einnig veðinu um 2 eða 0,5 ef leikmaður DDaði eða surrenderaði
+     * 
+     * @param change hversu mikið á að breyta samtals um
+     */
     public void changeTotal(int change) {
         if (dd) {
             betTotal += 2 * change;

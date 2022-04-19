@@ -1,15 +1,5 @@
 package hi.verkefni.vidmot;
 
-import java.net.URL;
-import java.util.ResourceBundle;
-
-import org.tinylog.Logger;
-
-import hi.verkefni.vinnsla.Leikmadur;
-import hi.verkefni.vinnsla.LeikmennManager;
-import hi.verkefni.vinnsla.SpilV;
-import hi.verkefni.vinnsla.Stig;
-
 /******************************************************************************
  *  Nafn    : Sara Þórhallsdóttir
  *  T-póstur: kgt2@hi.is
@@ -19,6 +9,16 @@ import hi.verkefni.vinnsla.Stig;
  *  um nafn, er með Handlerana fyrir alla takkana, sér um öll animations og
  *  displayar hvort leikmaðurinn hafi unnið eða ekki.
  *****************************************************************************/
+
+import java.net.URL;
+import java.util.ResourceBundle;
+
+import org.tinylog.Logger;
+
+import hi.verkefni.vinnsla.Leikmadur;
+import hi.verkefni.vinnsla.LeikmennManager;
+import hi.verkefni.vinnsla.SpilV;
+import hi.verkefni.vinnsla.Stig;
 
 import javafx.animation.PathTransition;
 import javafx.application.Platform;
@@ -42,6 +42,7 @@ import javafx.scene.text.Text;
 import javafx.util.Duration;
 
 public class BlackjackController implements Initializable {
+    // Static final Tilviksbreytur
     private static final String BET = "Bet:    ";
     private static final String TOTAL = "Total: ";
 
@@ -95,11 +96,11 @@ public class BlackjackController implements Initializable {
 
     /**
      * Keyrist bæði þegar Initalize() kallar í það þegar leikurinn byrjar en líka
-     * þegar
-     * leikmaðurinn ýtir á CONTINUE
-     * frumstillir tilviksbreytur, breytir tökkunum til baka ef þú varst að klára
-     * leik
-     * og bættir spilum við höndina hjá dealer og leikmanninum
+     * þegar leikmaðurinn ýtir á CONTINUE
+     * frumstillir tilviksbreytur, breytir tökkunum til baka, hreinsar stóra
+     * "WIN/LOSE/BUST" textan og hreinsar spilin af skjánum ef þú varst að klára
+     * leik.
+     * Bættir spilum við höndina hjá dealer
      */
     @FXML
     public void NewGameHandler() {
@@ -134,6 +135,7 @@ public class BlackjackController implements Initializable {
         // Tekur burt textan um hvort leikmaðurinn hafi unnið eða ekki
         bigTextVisibility();
 
+        // Núllstillir samtals gildið hjá dealer
         fxDealerTotal.setText("0");
 
         // Frumstillir takkana neðst
@@ -146,6 +148,11 @@ public class BlackjackController implements Initializable {
         newLeikmadurGame();
     }
 
+    /**
+     * Keyrt eftir NewGameHandler() og í fyrsta skipti sem nýr leikmaður byrjar frá
+     * changeLeikmadur()
+     * Frumstillir viðmótið fyrir leikmenn og gefur þeim tvö spil í hendi
+     */
     private void newLeikmadurGame() {
         // Setur bet gildin
         fxBetTotal.setText(TOTAL + String.valueOf(leikmennManager.getCurrentLeikmadur().getBetTotal()));
@@ -170,20 +177,42 @@ public class BlackjackController implements Initializable {
 
     /****************************** STATE MANAGEMENT ******************************/
 
+    /**
+     * Kallað af animateCards() í hvert skipti sem animationQueue klárast eða frá
+     * StandHandler()
+     * athugar hvort að leikmadur hafi verið að ýta á takka.
+     */
     private void leikmadurGerir() {
+        // Athugar hvort leikmadur hafi verið að gera
         Logger.info("Tried changing states, called from {}", leikmennManager.getCurrentLeikmadur());
         if (checkCanDo()) {
             return;
         }
+        // Athugar hvort núverandi leikmaður hafi "gameOver"-að
+        // (þ.e. tapað, staðið eða unnið)
         checkIfCurrentLeikmadurGameOver();
     }
 
+    /**
+     * Athugar hvort leikmaðurinn geti leikið
+     * 
+     * @return skilar hvort leikmaðurinn geti leikið
+     */
     private boolean checkCanDo() {
         Logger.debug("Check if {} can do: {}", leikmennManager.getCurrentLeikmadur(),
                 leikmennManager.getCurrentLeikmadur().isCanDo());
         return leikmennManager.getCurrentLeikmadur().isCanDo();
     }
 
+    /**
+     * Athugar hvort allir leikmenn eru "gameOver"
+     * Ef svo er : setjum við allGameOver tilviksbreytuna og athugum hvort einhver
+     * er standandi til að láta dealerinn draga þau spil sem delaerinn á eftir að
+     * draga.
+     * Ef ekki : athugum við hvort einhver annar leikmaður á eftir að gera
+     * 
+     * @return skilar ef allir leikmenn eru "gameOver"
+     */
     private boolean checkIfAllGameOver() {
         Logger.debug("Check if all gameOver, called from {} : {}", leikmennManager.getCurrentLeikmadur(),
                 leikmennManager.isAllLeikmadurGameOver());
@@ -196,27 +225,52 @@ public class BlackjackController implements Initializable {
         return false;
     }
 
+    /**
+     * Athugar hvort núverandi leikmaður hafi "gameOver"-að með því að athuga hvort
+     * leikmaðurinn standi, hafi "bust"-að eða hvort bera má saman leikmanninn við
+     * delaerinn.
+     * Ef svo er ekki athugum við hvort einhver annar leikmaður geti gert
+     * 
+     * @return skilar hvort núverandi leikmaður hafi "gameOver"-að
+     */
     private boolean checkIfCurrentLeikmadurGameOver() {
         Logger.debug("Check if {} gameOver: {}", leikmennManager.getCurrentLeikmadur(), (leikmennManager
                 .getCurrentLeikmadur().isStand() || leikmennManager.getCurrentLeikmadur().getSamtals() > 21
                 || (leikmennManager.getDealer().isGameOver() && leikmennManager.getCurrentLeikmadur().isGameOver()
                         && leikmennManager.getDealer().getSamtals() <= 21)));
+
+        // Athugar hvort núverandi leikmaður stendur
         if (leikmennManager.getCurrentLeikmadur().isStand()) {
+            // Setur gameOver breytuna hjá núverandi leikmanni
             leikmennManager.getCurrentLeikmadur().setGameOver(true);
+
+            // Athugar hvort allir leikmenn séu "gameOver"
             checkIfAllGameOver();
             return true;
         }
+
+        // Athugar hvort núverandi leikmaður sé bust
         if (checkIfCurrentLeikmadurBust()) {
             return true;
         }
+
+        // Athugar hvort bera megi núverandi leikmann saman við dealer
         if (checkIfCurrentLeikmadurWinOrLose()) {
+            // Ber núverandi leikmann samana við dealer
             callWinOrLose();
             return true;
         }
+
+        //// Athugar hvort aðrir leikmenn geti gert
         checkIfOtherLeikmadurCanDo();
         return false;
     }
 
+    /**
+     * Athugar hvort bera megi núverandi leikmann saman við dealer
+     * 
+     * @return skilar hvort bera megi núverandi leikmann saman við dealer
+     */
     private boolean checkIfCurrentLeikmadurWinOrLose() {
         Logger.debug("Check if {} WinOrLose: {}", leikmennManager.getCurrentLeikmadur(),
                 (leikmennManager.getCurrentLeikmadur().getSamtals() <= 21 && leikmennManager.getDealer().isGameOver()
@@ -245,13 +299,25 @@ public class BlackjackController implements Initializable {
         return false;
     }
 
+    /**
+     * Athugar hvort núverandi leikmaður "bust"-ar
+     * 
+     * @return skilar hvort núverandi leikmaður "bust"-ar
+     */
     private boolean checkIfCurrentLeikmadurBust() {
         Logger.debug("Check if {} Bust", leikmennManager.getCurrentLeikmadur());
+
         // Checks if player bust
         if (leikmennManager.getCurrentLeikmadur().getSamtals() > 21) {
+            // Setur gameOver breytuna hjá núverandi leikmanni
             leikmennManager.getCurrentLeikmadur().setGameOver(true);
+
+            // Uppfærir JavaFX elements til að sýna að núverandi leikmaður hafi bustað
             lose(true);
             Logger.debug("{} busted", leikmennManager.getCurrentLeikmadur());
+
+            // Athugar hvort allir leikmenn séu nú þegar skráðir gameover annars athugum við
+            // hvort allir leikmenn séu gameover
             if (allGameOver) {
                 return true;
             }
@@ -261,6 +327,10 @@ public class BlackjackController implements Initializable {
         return false;
     }
 
+    /**
+     * Athugar hvort leikmaður vinnur eða tapar þegar leikmaðurinn er borin saman
+     * við dealer og uppfærir viðmótið samkvæmt því
+     */
     private void callWinOrLose() {
         Logger.info("called WinOrLose from {}", leikmennManager.getCurrentLeikmadur());
         if (checkIfCurrentLeikmadurWinsDealer()) {
@@ -270,40 +340,86 @@ public class BlackjackController implements Initializable {
             Logger.info("{} loses", leikmennManager.getCurrentLeikmadur());
             lose(false);
         }
+
+        // Athugar síðan hvort allir leikmenn séu gameOver
         checkIfAllGameOver();
     }
 
+    /**
+     * Athugar hvort núverandi leikmaður vinnur eða tapar þegar leikmaðurinn er
+     * borin saman við dealer
+     * 
+     * @return skilar hvort núverandi leikmaður vinnur eða tapar þegar leikmaðurinn
+     *         er borin saman við dealer
+     */
     private boolean checkIfCurrentLeikmadurWinsDealer() {
         Logger.info("comparing {} to dealer: {}", leikmennManager.getCurrentLeikmadur(),
                 leikmennManager.getDealer().getSamtals() <= leikmennManager.getCurrentLeikmadur().getSamtals());
         return leikmennManager.getDealer().getSamtals() <= leikmennManager.getCurrentLeikmadur().getSamtals();
     }
 
+    /**
+     * Athugar hvort annar leikmaður geti gert.
+     * Ef svo er : slökkvum við á userActions fyrir núverandi leikmann og skiptum um
+     * leikmann efitr 1,5 sec til að núverandi leikmaður geti séð spilin sín og
+     * hvort leikmaurinn hafi tapað
+     * Ef svo er ekki : breytum við um round efitr 1,5 sec til að núverandi
+     * leikmaður geti séð spilin sín og hvort leikmaurinn hafi tapað
+     * 
+     * @return skilar hvort annar leikmaður geti gert.
+     */
     private boolean checkIfOtherLeikmadurCanDo() {
         Logger.debug("Check if other Leikmadur than {} can do", leikmennManager.getCurrentLeikmadur());
         if (leikmennManager.isOtherLeikmadursStillCanDo()) {
             Logger.info("change called from checkIfOtherLeikmadurCanDo");
+
+            // Slekkur á userActions
             disableUserActions(true);
+
+            // Breytir um leikmann eftir 1,5 sec
             delay(1500, this::changeLeikmadur);
             return true;
         }
+        // Breytir um round eftir 1,5 sec
         delay(1500, this::changeRound);
         return false;
     }
 
+    /**
+     * Athugar hvort einhver leikmaður er standandi.
+     * Ef svo er : athugum við hvort núverandi leikmaður er standandi og setjum
+     * showLate
+     * Ef svo er ekki : sýnum við continue takkan
+     * 
+     * @return skilar hvort einhver leikmaður er standandi.
+     */
     private boolean checkIfAnyStand() {
         Logger.debug("Check if any stand, called from {}", leikmennManager.getCurrentLeikmadur());
         if (leikmennManager.getAnyStanding()) {
             if (!leikmennManager.getDealer().isGameOver()) {
+                // Setur showLate
                 showLate = true;
             }
+
+            // Athugar hvort núverandi leikmaður er standandi
             checkIfCurrentLeikmadurStand();
             return true;
         }
+
+        // Sýnir continue takkann
         showPlayButtons(false);
         return false;
     }
 
+    /**
+     * Athugar hvort núverandi leikmaður er standandi.
+     * bara kallað ef allir leikmenn eru gameOver svo við látum dealerinn fá restina
+     * af spilunum sýnum og tökum síðan stand af núverandi leikmanni.
+     * Ef svo er ekki : breytum við um leikmann og prufum hvort nýji leikmaðurinn sé
+     * standandi
+     * 
+     * @return skilar hvort núverandi leikmaður er standandi
+     */
     private boolean checkIfCurrentLeikmadurStand() {
         Logger.debug("Check if {} stand", leikmennManager.getCurrentLeikmadur());
         if (leikmennManager.getCurrentLeikmadur().isStand()) {
@@ -312,23 +428,44 @@ public class BlackjackController implements Initializable {
             return true;
         }
         Logger.info("change called from checkIfCurrentLeikmadurStand");
+
+        // Breytum um leikmann og prufum hvort nýji leikmaðurinn sé standandi
         delay(1500, this::changeLeikmadur);
         delay(1500, this::checkIfAnyStand);
         return false;
     }
 
+    /**
+     * Breytir um umferð nema núvernadi leikmaður geti ennþá gert.
+     * gerir öllum notendum nema þeim sem standa kleyft að gera aftur, breytir um
+     * leikmann og bætir síðan einu spili við hendina á dealer ef dealer getur
+     * fengið fleiri spil
+     */
     private void changeRound() {
         Logger.info("Tried to change round, called from {}", leikmennManager.getCurrentLeikmadur());
         if (checkCanDo()) {
             return;
         }
         Logger.info("Changed round from {}", leikmennManager.getCurrentLeikmadur());
+
+        // gerir öllum notendum nema þeim sem standa kleyft að gera aftur
         leikmennManager.setAllLeikmennCanDo();
         Logger.info("Change called from changeRound");
+
+        // Breytir um leikmann
         changeLeikmadur();
+
+        // Bætir síðan einu spili við hendina á dealer ef dealer getur fengið fleiri
+        // spil
         checkDealerCanPlay();
     }
 
+    /**
+     * Bætir einu spili (eða fleiri ef allGameOver) við hendina á dealer ef dealer
+     * getur fengið fleiri spil.
+     * 
+     * @return skilar hvort dealer geti spilað spili
+     */
     private boolean checkDealerCanPlay() {
         Logger.debug("Check if dealer can play, called from {}", leikmennManager.getCurrentLeikmadur());
         if (leikmennManager.getDealer().isGameOver()) {
@@ -362,11 +499,9 @@ public class BlackjackController implements Initializable {
     /******************** HANDLES INPUT FROM JAVAFX BUTTONS ********************/
 
     /**
-     * Keyrist þegar leikmaðurinn ýtir á HIT
-     * Bætir spili við hendina hjá leikmanninum og athugar hvort leikmaðurinn hafi
-     * sprungið
-     * 
-     * @param e
+     * Keyrist þegar leikmaður ýtir á HIT
+     * Bætir spili við hendina hjá leikmanninum, kallar á defaultButtonFunctions()
+     * og athugar hvort leikmaðurinn hafi sprungið
      */
     @FXML
     public void HitHandler() {
@@ -378,9 +513,9 @@ public class BlackjackController implements Initializable {
     }
 
     /**
-     * Keyrist þegar leikmaðurinn ýtir á STAND
-     * Bætir spilum við hendina hjá dealerinum þangað til að dealerinn er komin með
-     * samtals 17 eða hærra
+     * Keyrist þegar leikmaður ýtir á STAND
+     * Kallar á defaultButtonFunctions(), stillir stand breytuna hjá núverandi
+     * leikmanni og keyrir lógíkina
      */
     @FXML
     public void StandHandler() {
@@ -390,10 +525,11 @@ public class BlackjackController implements Initializable {
     }
 
     /**
-     * Keyrist þegar leikmaðurinn ýtir á DOUBLE DOWN
-     * Bætir spili við hendina hjá leikmanninum, setur dd = true,
-     * athugar hvort leikmaðurinn hafi sprungið og keyrir síðan StandHandler() ef
-     * leikmaðurinn sprakk ekki
+     * Keyrist þegar leikmaður ýtir á DOUBLE DOWN
+     * Kallar á defaultButtonFunctions(), stillir stand breytuna hjá núverandi
+     * leikmanni, stillir DD breytuna hjá núverandi leikmanni, uppfærir hversu mikið
+     * leikmadurinn er að betta á viðmótinu, bætir spili við hendina hjá
+     * leikmanninum og athugar hvort leikmaðurinn hafi sprungið
      */
     @FXML
     public void DDHandler() {
@@ -402,9 +538,18 @@ public class BlackjackController implements Initializable {
         leikmennManager.getCurrentLeikmadur().setDd(true);
         fxCurrentBet.setText(String.valueOf(leikmennManager.getBetAmount() * 2));
         addCardToHand(false);
-        // Breytir útreikningunum fyrir "bet" í lokinn
+        if (leikmennManager.getCurrentLeikmadur().getSamtals() > 21) {
+            leikmennManager.getCurrentLeikmadur().setGameOver(true);
+        }
     }
 
+    /**
+     * Keyrist þegar leikmaður ýtir á SURRENDER.
+     * Kallar á defaultButtonFunctions(), stillir gameOver breytuna hjá núverandi
+     * leikmanni, stillir surrendered breytuna hjá núverandi leikmanni, uppfærir
+     * hversu mikið leikmadurinn er að betta á viðmótinu, kallar á lose() til að
+     * uppfæra viðmótið og athugar hvort allir leikmenn séu gameover
+     */
     @FXML
     public void SurrenderHandler() {
         defaultButtonFunctions();
@@ -415,6 +560,10 @@ public class BlackjackController implements Initializable {
         checkIfAllGameOver();
     }
 
+    /**
+     * Stillir canDo breytuna hjá núverandi leikmanni, stillir canSurrender breytuna
+     * hjá núverandi leikmanni og felur surrender takkann
+     */
     private void defaultButtonFunctions() {
         // Breyta því að leikmadurinn sem var að gera geti ekki lengur "surrender"-að
         leikmennManager.getCurrentLeikmadur().setCanDo(false);
@@ -541,8 +690,8 @@ public class BlackjackController implements Initializable {
             // animationQueueinu
             // ef svo er þá keyrum við animateCards aftur með næsta spilinu í
             // animationQueueinu
-            // ef ekki sýnum við heildartölurnar
-            // ef StandHandler var kallað keyrum við líka calculateWinner()
+            // ef ekki uppfærum við heildartölurnar keyrum state logíkina og leyfum
+            // leikmanninum að gera.
             pt.onFinishedProperty().set(new EventHandler<ActionEvent>() {
                 @Override
                 public void handle(ActionEvent event) {
@@ -551,21 +700,32 @@ public class BlackjackController implements Initializable {
                         animateCards(animationPathQueue[animationPos + 1], animationQueue[animationPos + 1],
                                 animationPos + 1);
                     } else {
+                        // Uppfærum heildartölur
                         fxDealerTotal.setText(Integer.toString(leikmennManager.getDealer().getSamtals()));
                         fxPlayerTotal.setText(Integer.toString(leikmennManager.getCurrentLeikmadur().getSamtals()));
+
+                        // Keyrir lógíkina
                         leikmadurGerir();
+
+                        // síðan til að leikmaðurinn fái ekki að vita hvort leikmaðurinn hafi
+                        // unnip/tapað áður en leikmaðurinn er búin að fá spilin í hendina
+                        // sínum við það bara eftir að seinasta spilið er komið í hendi
                         if (showLate && leikmennManager.getCurrentLeikmadur().isGameOver()) {
                             bigTextVisibility();
                             showLate = false;
                             if (leikmennManager.isAllLeikmadurGameOver()) {
+                                // Breyir um leikmann eftir 1,5 sec
                                 Logger.info("Change called from AnimateCards");
                                 delay(1500, BlackjackController.this::changeLeikmadur);
                             }
                         }
+
+                        // Leyfir leikmanninum að gera aftur
                         disableUserActions(false);
                     }
                 }
             });
+            // Gangsetjum PathTransitionið
             pt.play();
         }
     }
@@ -573,8 +733,9 @@ public class BlackjackController implements Initializable {
     /******************** SHOW VARIOUS SCREEN ELEMENTS ********************/
 
     /**
-     * Helper-function sem keyrir þegar leikmaðurinn tapar og
-     * uppfærir alla viðmótshluti til að sýna það
+     * Helper-function sem keyrir þegar leikmaðurinn tapar.
+     * uppfærir alla viðmótshluti til að sýna að leikmaðurinn hafi tapað og uppfærir
+     * gildin hjá leikmennManager
      * 
      * @param bust segir functioninu hvort leikmaðurinn hafi sprungið (BUST)
      */
@@ -599,8 +760,9 @@ public class BlackjackController implements Initializable {
     }
 
     /**
-     * Helper-function sem keyrir þegar leikmaðurinn vinnur og
-     * uppfærir alla viðmótshluti til að sýna það
+     * Helper-function sem keyrir þegar leikmaðurinn vinnur.
+     * uppfærir alla viðmótshluti til að sýna leikmaðurinn að vann og uppfærir
+     * gildin hjá leikmennManager
      */
     private void win() {
         Logger.info("win shown for {}", leikmennManager.getCurrentLeikmadur());
@@ -617,6 +779,12 @@ public class BlackjackController implements Initializable {
         }
     }
 
+    /**
+     * Gerir leikmanninum ókleyft að nota takka á meðan eitthvað er í gangi eins og
+     * t.d. spil að færast eða þegar breytt er um notanda
+     * 
+     * @param disable hvort við viljum disable-a takkana eða ekki
+     */
     private void disableUserActions(boolean disable) {
         fxPlayButtons.setDisable(disable);
         fxStopButtons.setDisable(disable);
@@ -691,6 +859,11 @@ public class BlackjackController implements Initializable {
 
     }
 
+    /**
+     * Felur eða sýnir surrender takkan
+     * 
+     * @param hide hvort eigi að fela eða sýna surredner takkann
+     */
     private void hideSurrender(boolean hide) {
         if (hide) {
             fxPlayButtons.setPrefWidth(1280);
@@ -707,6 +880,13 @@ public class BlackjackController implements Initializable {
 
     /******************** CHANGEING PLAYER AFTER SET TIME ********************/
 
+    /**
+     * Keyrir eitthvað function eftir gefin tíma
+     * 
+     * @param millis          Gefin tími sem keyra á functionið eftir, í
+     *                        millisekúndum
+     * @param toRunAfterDelay Functionið sem keyra á eftir gefin tíma
+     */
     private static void delay(long millis, Runnable toRunAfterDelay) {
         Task<Void> sleeper = new Task<Void>() {
             @Override
@@ -724,10 +904,16 @@ public class BlackjackController implements Initializable {
         new Thread(sleeper).start();
     }
 
+    /**
+     * Breytir um leikmann í gegnum leikmennManager og uppfærir alla viðmótshluti
+     * til að sýna það
+     */
     private void changeLeikmadur() {
+        // Ef það er bara einn leikmaður þurfum við ekki að skipta um leikmann
         if (leikmennManager.getAmountOfLeikmen() == 1) {
             return;
         }
+
         Logger.info("Changed player from: {}", leikmennManager.getCurrentLeikmadur());
 
         // Fela spil leikmannsins sem var að gera
@@ -736,7 +922,8 @@ public class BlackjackController implements Initializable {
             leikmadurCards.get(i + offset).setVisible(false);
         }
 
-        // Skipta um leikmann
+        // Skipta um leikmann þangað til að við finnum leikmann sem er ekki standandi
+        // eða gameOver nema allir leikmenn séu gameOver
         leikmennManager.changeLeikmadur();
         if ((leikmennManager.getCurrentLeikmadur().isStand() || leikmennManager.getCurrentLeikmadur().isGameOver())
                 && !allGameOver) {
@@ -750,13 +937,15 @@ public class BlackjackController implements Initializable {
             leikmadurCards.get(i + offset - 1).setVisible(true);
         }
 
-        // Setja JavaFX gildin fyrir nýja notandan
+        // Setja JavaFX gildin fyrir nýja leikmanninn
         fxPlayerName.setText(leikmennManager.getCurrentLeikmadur().getNafn());
         fxBetTotal.setText(TOTAL + String.valueOf(leikmennManager.getCurrentLeikmadur().getBetTotal()));
         fxPlayerTotal.setText(Integer.toString(leikmennManager.getCurrentLeikmadur().getSamtals()));
         disableUserActions(false);
         bigTextVisibility();
 
+        // Byrjum nýjan leik fyrir leikmanninn sem skipt var yfir á ef þetta er í fyrsta
+        // skipti sem leikmaðurinn gerir (notum surrender breytuna til að athuga það)
         if (leikmennManager.getCurrentLeikmadur().isCanSurrender()) {
             newLeikmadurGame();
         }
@@ -766,22 +955,27 @@ public class BlackjackController implements Initializable {
 
     /**
      * Keyrist þegar leikurinn byrjar
-     * býr til og sýnir TextInputDialog til að spyrja Leikmanninn til nafns og býr
-     * síðan til leikmennina tvö (dealer og leikmadur) og setur nafnið sem hann fékk
-     * frá Dialoginu í Leikmadur leikmanninn
+     * býr til og sýnir TextInputDialog til að spyrja leikmanninn/leikmennina til
+     * nafns og býr síðan til leikmennina í gengum leikmennManager og setur nafn
+     * spilarana frá Dialoginu.
      * frumstillir síðan bet og keyrir NewGameHandler() til að byrja leikinn
      * 
-     * @param location
-     * @param resources
+     * @param location  location sem kemur frá JavaFX library-inu
+     * @param resources resources sem kemur frá JavaFX library-inu
      */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        // Sýnir leikmennDialog
         LeikmennDialog leikmennDialog = new LeikmennDialog();
         String[] response = leikmennDialog.showDialog();
+
+        // Ef slökkt var á dialog eða hætt við, slökkvum við á öllu forritinu
         if (response == null) {
             QuitHandler();
             return;
         }
+
+        // Stofnum og festum nöfn við leikmenn
         if (response.length == 2) {
             leikmennManager = new LeikmennManager(new Leikmadur[] { new Leikmadur(fxPlayerPane, response[0]) },
                     Integer.valueOf(response[1]), new Leikmadur(fxDealerPane, "Dealer"));
@@ -792,6 +986,7 @@ public class BlackjackController implements Initializable {
                             new Leikmadur(fxDealerPane, response[1]) },
                     Integer.valueOf(response[2]), new Leikmadur(fxDealerPane, "Dealer"));
         }
+        // Byrjum nýjan leik
         NewGameHandler();
     }
 }

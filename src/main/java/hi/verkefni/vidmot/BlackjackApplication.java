@@ -4,8 +4,8 @@ package hi.verkefni.vidmot;
  *  Nafn    : Sara Þórhallsdóttir
  *  T-póstur: kgt2@hi.is
  *
- *  Lýsing  : sér um að setja upp loada tuttuguOgEinn-view.fxml skjalið og 
- *  búa til gluggann utan um blackjack forritið
+ *  Lýsing  : sér um að setja upp loada tuttuguOgEinn-view.fxml skjalið, 
+ *  búa til gluggann utan um blackjack forritið og kveikja á stigatöflunni
  *****************************************************************************/
 
 import javafx.application.Application;
@@ -27,6 +27,10 @@ public class BlackjackApplication extends Application {
     /**
      * Keyrist eftir main functioninu
      * Sækir gögnin frá tuttuguOgEinn-view.fxml og býr til glugga
+     * setur líka upp onCloseRequestEvent sem geymir stiginn hjá
+     * leikmönnunum í textaskrá
+     * 
+     * @param stage stage sem kemur frá JavaFX library-inu
      */
     @Override
     public void start(Stage stage) throws IOException {
@@ -54,6 +58,8 @@ public class BlackjackApplication extends Application {
     public static void main(String[] args) {
         launch();
     }
+
+    // Getters and setters
 
     public static Stigatafla getStigatafla() {
         return stigatafla;

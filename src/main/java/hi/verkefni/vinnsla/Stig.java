@@ -1,13 +1,29 @@
 package hi.verkefni.vinnsla;
 
+/******************************************************************************
+ * Nafn : Sara Þórhallsdóttir
+ * T-póstur: kgt2@hi.is
+ *
+ * Lýsing : Hlutur sem geymir nafn og stig leikmanns fyrir stigatöfluna
+ *****************************************************************************/
+
 public class Stig implements Comparable<Stig> {
+    // Java Tilviksbreytur
     private String nafn;
     private int score;
 
+    /**
+     * Constructor
+     * 
+     * @param nafn  nafn leikmanns
+     * @param score betTotal score leikmanns
+     */
     public Stig(String nafn, int score) {
         this.nafn = nafn;
         this.score = score;
     }
+
+    // Getters and Setters
 
     public String getNafn() {
         return nafn;
@@ -20,6 +36,8 @@ public class Stig implements Comparable<Stig> {
     public String toString() {
         return nafn + " " + score;
     }
+
+    // Overriden Object functions
 
     @Override
     public int compareTo(Stig o) {

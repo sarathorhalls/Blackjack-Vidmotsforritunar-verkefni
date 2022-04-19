@@ -1,5 +1,13 @@
 package hi.verkefni.vinnsla;
 
+/******************************************************************************
+ *  Nafn    : Sara Þórhallsdóttir
+ *  T-póstur: kgt2@hi.is
+ *
+ *  Lýsing  : les inn stigatöflu og heldur utan um hana, skrifar síðan aftur
+ *  í stigatöfluna þegar leikmaður lýkur leik
+ *****************************************************************************/
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
@@ -12,13 +20,19 @@ import java.util.Arrays;
 import org.tinylog.Logger;
 
 public class Stigatafla {
+    // static final Tilviksbreytur
     private static final String STIGATAFLAURL = "stigatafla.txt";
 
+    // Java Tilviksbreytur
     private Stig[] stigArray;
     private Stig currentPlayer1;
     private Stig currentPlayer2;
 
+    /**
+     * Constructor
+     */
     public Stigatafla() {
+        // Les inn stigatöfluna úr skjali
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(getClass().getResource(STIGATAFLAURL).openStream()))) {
             ArrayList<Stig> stigAL = new ArrayList<>();
@@ -40,6 +54,12 @@ public class Stigatafla {
         }
     }
 
+    /**
+     * Bætir score frá leikmanni í geymslu sem skrifað er síðan í skjal þegar leik
+     * er lokað
+     * 
+     * @param stigP1 Stig frá leikmanni 1
+     */
     public void add(Stig stigP1) {
         if (currentPlayer1 == null) {
             currentPlayer1 = stigP1;
@@ -50,6 +70,13 @@ public class Stigatafla {
         }
     }
 
+    /**
+     * Bætir score frá leikmönnum í geymslu sem skrifað er síðan í skjal þegar leik
+     * er lokað
+     * 
+     * @param stigP1 Stig frá leikmanni 1
+     * @param stigP2 Stig frá leikmanni 2
+     */
     public void add(Stig stigP1, Stig stigP2) {
         if (currentPlayer1 == null) {
             currentPlayer1 = stigP1;
@@ -65,10 +92,15 @@ public class Stigatafla {
         }
     }
 
+    /**
+     * Skrifar aftur í stigatöflu skjalið eftir að leikmaður klárar leik
+     */
     public void writeToFile() {
+        // Ef leikmaður 1 hefur ekki breytt score gerum við ekkert
         if (currentPlayer1 == null) {
             return;
         }
+        // Ef leikmaður 2 hefur ekki breytt score geymum við bara Stig frá leikmanni 1
         if (currentPlayer2 == null) {
             int i = 0;
             boolean found = false;
@@ -88,6 +120,7 @@ public class Stigatafla {
                 stigArray = tempStigArray;
             }
         } else {
+            // Ef báðir leikmenn hafa breytt score geymum við frá þeim báðum
             int i = 0;
             boolean[] found = new boolean[] { false, false };
             for (Stig stig : stigArray) {
@@ -118,7 +151,10 @@ public class Stigatafla {
                 stigArray = tempStigArray;
             }
         }
+        // Setjum stiginn í röð
         Arrays.sort(stigArray);
+
+        // Þar sem röðin er öfug byrjum við frá botninum og skrifum í stigatafla skjal
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(STIGATAFLAURL));) {
             for (int i = stigArray.length - 1; i >= 0; i--) {
                 writer.write(stigArray[i].toString());
@@ -133,10 +169,17 @@ public class Stigatafla {
         }
     }
 
+    // Getters and Setters
+
     public Stig[] getStigArray() {
         return stigArray;
     }
 
+    /**
+     * Test function fyrir Stig
+     * 
+     * @param args
+     */
     public static void main(String[] args) {
         Stigatafla test1 = new Stigatafla();
         for (Stig stig : test1.stigArray) {
