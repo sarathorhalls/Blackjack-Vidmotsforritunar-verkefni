@@ -5,7 +5,7 @@ A simple implementation of the famous card game Blackjack in JavaFx for a school
 ## Prerequisites
 
 - Have [Maven](https://maven.apache.org/download.cgi) and it's Prerequisites installed.
-- Have version 17.0.1 or newer of [JavaFX](https://gluonhq.com/products/javafx/) installed.
+- Have version 17.0.1 or newer of [JavaFX](https://gluonhq.com/products/javafx/) installed. (I'm not entirely sure if this is necessary)
 - I recommend running this in VSCode.
 
 ## How to run
