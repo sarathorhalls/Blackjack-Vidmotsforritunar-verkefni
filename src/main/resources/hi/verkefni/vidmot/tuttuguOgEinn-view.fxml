@@ -24,12 +24,11 @@
             <ColumnConstraints hgrow="SOMETIMES" maxWidth="-Infinity" minWidth="0.0" prefWidth="30.0" />
         </columnConstraints>
         <rowConstraints>
-            <RowConstraints maxHeight="-Infinity" minHeight="0.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints maxHeight="-Infinity" minHeight="0.0" prefHeight="20.0" vgrow="SOMETIMES" />
           <RowConstraints maxHeight="-Infinity" minHeight="10.0" prefHeight="250.0" vgrow="SOMETIMES" />
           <RowConstraints maxHeight="104.0" minHeight="0.0" prefHeight="0.0" vgrow="SOMETIMES" />
           <RowConstraints maxHeight="88.0" minHeight="0.0" prefHeight="0.0" vgrow="SOMETIMES" />
             <RowConstraints maxHeight="-Infinity" minHeight="10.0" prefHeight="250.0" vgrow="SOMETIMES" />
-            <RowConstraints maxHeight="30.0" minHeight="3.0" prefHeight="30.0" vgrow="SOMETIMES" />
         </rowConstraints>
          <children>
             <VBox prefHeight="200.0" prefWidth="100.0" spacing="70.0" GridPane.columnIndex="3" GridPane.rowIndex="4">
@@ -59,11 +58,6 @@
                   <Font name="Broadway" size="40.0" />
                </font>
             </Text>
-            <Text fx:id="fxPlayerName" strokeType="OUTSIDE" strokeWidth="0.0" text="Name" GridPane.columnIndex="3" GridPane.halignment="CENTER" GridPane.rowIndex="3" GridPane.valignment="CENTER">
-               <font>
-                  <Font name="Broadway" size="40.0" />
-               </font>
-            </Text>
             <ImageView fitHeight="250.0" fitWidth="194.0" pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="3" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER">
                <image>
                   <Image url="@myndir/CardDeck.png" />
@@ -79,8 +73,19 @@
                </children>
             </Pane>
             <Pane fx:id="fxDealerPane" prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            <Text fx:id="fxPlayerName" strokeType="OUTSIDE" strokeWidth="0.0" text="Name" GridPane.columnIndex="3" GridPane.halignment="CENTER" GridPane.rowIndex="3" GridPane.valignment="CENTER">
+               <font>
+                  <Font name="Broadway" size="40.0" />
+               </font>
+            </Text>
+            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Dealer" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER">
+               <font>
+                  <Font name="Broadway" size="40.0" />
+               </font>
+            </Text>
          </children>
       </GridPane>
+      <HBox prefHeight="30.0" prefWidth="200.0" style="-fx-background-color: #56a614;" />
       <HBox prefHeight="65.0" prefWidth="1280.0" style="-fx-background-color: #56a614;">
          <children>
             <HBox fx:id="fxPlayButtons" maxWidth="-Infinity" minWidth="-Infinity" prefHeight="65.0" prefWidth="1280.0">
@@ -100,7 +105,11 @@
                         <Font name="Colonna MT" size="30.0" />
                      </font>
                   </Button>
-                  <Button fx:id="fxSurrenderButton" mnemonicParsing="false" onAction="#SurrenderHandler" onMousePressed="#ButtonColorChangerP" onMouseReleased="#ButtonColorChangerR" prefHeight="65.0" prefWidth="426.66" style="-fx-background-color: #bd132f; -fx-border-color: #000000; -fx-border-width: 3px; -fx-border-radius: 3px;" text="SURRENDER" textFill="#b5ad3c">
+               </children>
+            </HBox>
+            <HBox maxWidth="-Infinity" minWidth="-Infinity" prefHeight="65.0" prefWidth="320.0">
+               <children>
+                  <Button fx:id="fxSurrenderButton" mnemonicParsing="false" onAction="#SurrenderHandler" onMousePressed="#ButtonColorChangerP" onMouseReleased="#ButtonColorChangerR" prefHeight="65.0" prefWidth="320" style="-fx-background-color: #bd132f; -fx-border-color: #000000; -fx-border-width: 3px; -fx-border-radius: 3px;" text="SURRENDER" textFill="#b5ad3c">
                      <font>
                         <Font name="Colonna MT" size="30.0" />
                      </font>

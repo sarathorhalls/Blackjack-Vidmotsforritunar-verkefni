@@ -91,6 +91,10 @@ public class LeikmennManager {
         return leikmenn[currentlySelected];
     }
 
+    public int getAmountOfLeikmen() {
+        return leikmenn.length;
+    }
+
     public int getCardOffset(Leikmadur leikmadur) {
         int counter = 0;
         for (Leikmadur testAgainstLeikmadur : leikmenn) {

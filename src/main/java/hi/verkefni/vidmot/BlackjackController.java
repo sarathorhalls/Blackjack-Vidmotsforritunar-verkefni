@@ -156,6 +156,7 @@ public class BlackjackController implements Initializable {
         fxPlayerTotal.setText("0");
 
         // Setur nafn Leikmannsins
+        Logger.debug("Tried setting name to: {}", leikmennManager.getCurrentLeikmadur().getNafn());
         fxPlayerName.setText(leikmennManager.getCurrentLeikmadur().getNafn());
 
         // Sýnir surrender takkann
@@ -173,12 +174,6 @@ public class BlackjackController implements Initializable {
         Logger.info("Tried changing states, called from {}", leikmennManager.getCurrentLeikmadur());
         if (checkCanDo()) {
             return;
-        }
-
-        // Felur surrender takkann ef Leikmadur getur ekki "surrender"-að
-        if (!leikmennManager.getCurrentLeikmadur().isCanSurrender()) {
-            Logger.info("Tried hiding surrender button, called from {}", leikmennManager.getCurrentLeikmadur());
-            hideSurrender(true);
         }
         checkIfCurrentLeikmadurGameOver();
     }
@@ -288,6 +283,7 @@ public class BlackjackController implements Initializable {
         Logger.debug("Check if other Leikmadur than {} can do", leikmennManager.getCurrentLeikmadur());
         if (leikmennManager.isOtherLeikmadursStillCanDo()) {
             Logger.info("change called from checkIfOtherLeikmadurCanDo");
+            disableUserActions(true);
             delay(1500, this::changeLeikmadur);
             return true;
         }
@@ -328,7 +324,7 @@ public class BlackjackController implements Initializable {
         }
         Logger.info("Changed round from {}", leikmennManager.getCurrentLeikmadur());
         leikmennManager.setAllLeikmennCanDo();
-        Logger.info("change called from changeRound");
+        Logger.info("Change called from changeRound");
         changeLeikmadur();
         checkDealerCanPlay();
     }
@@ -414,6 +410,7 @@ public class BlackjackController implements Initializable {
         defaultButtonFunctions();
         leikmennManager.getCurrentLeikmadur().setGameOver(true);
         leikmennManager.getCurrentLeikmadur().setSurrendered(true);
+        fxCurrentBet.setText(String.valueOf(leikmennManager.getBetAmount() * 0.5));
         lose(false);
         checkIfAllGameOver();
     }
@@ -422,6 +419,8 @@ public class BlackjackController implements Initializable {
         // Breyta því að leikmadurinn sem var að gera geti ekki lengur "surrender"-að
         leikmennManager.getCurrentLeikmadur().setCanDo(false);
         leikmennManager.getCurrentLeikmadur().setCanSurrender(false);
+        // Felur surrender takkann ef Leikmadur getur ekki "surrender"-að
+        hideSurrender(true);
     }
 
     /**
@@ -554,16 +553,16 @@ public class BlackjackController implements Initializable {
                     } else {
                         fxDealerTotal.setText(Integer.toString(leikmennManager.getDealer().getSamtals()));
                         fxPlayerTotal.setText(Integer.toString(leikmennManager.getCurrentLeikmadur().getSamtals()));
-                        disableUserActions(false);
                         leikmadurGerir();
                         if (showLate && leikmennManager.getCurrentLeikmadur().isGameOver()) {
                             bigTextVisibility();
                             showLate = false;
                             if (leikmennManager.isAllLeikmadurGameOver()) {
-                                // allGameOver = true;
+                                Logger.info("Change called from AnimateCards");
                                 delay(1500, BlackjackController.this::changeLeikmadur);
                             }
                         }
+                        disableUserActions(false);
                     }
                 }
             });
@@ -581,7 +580,10 @@ public class BlackjackController implements Initializable {
      */
     private void lose(boolean bust) {
         Logger.info("lose shown for {}", leikmennManager.getCurrentLeikmadur());
-        leikmennManager.lose();
+        if (leikmennManager.getCurrentLeikmadur().getCondition() != "LOSE"
+                && leikmennManager.getCurrentLeikmadur().getCondition() != "BUST") {
+            leikmennManager.lose();
+        }
         BlackjackApplication.getStigatafla().add(new Stig(leikmennManager.getCurrentLeikmadur().getNafn(),
                 leikmennManager.getCurrentLeikmadur().getBetTotal()));
         fxBetTotal.setText(TOTAL + String.valueOf(leikmennManager.getCurrentLeikmadur().getBetTotal()));
@@ -594,7 +596,6 @@ public class BlackjackController implements Initializable {
         if (!showLate) {
             bigTextVisibility();
         }
-        // delay(3000, this::changeLeikmadur);
     }
 
     /**
@@ -603,7 +604,9 @@ public class BlackjackController implements Initializable {
      */
     private void win() {
         Logger.info("win shown for {}", leikmennManager.getCurrentLeikmadur());
-        leikmennManager.win();
+        if (leikmennManager.getCurrentLeikmadur().getCondition() != "WIN") {
+            leikmennManager.win();
+        }
         BlackjackApplication.getStigatafla().add(new Stig(leikmennManager.getCurrentLeikmadur().getNafn(),
                 leikmennManager.getCurrentLeikmadur().getBetTotal()));
         fxBetTotal.setText(TOTAL + String.valueOf(leikmennManager.getCurrentLeikmadur().getBetTotal()));
@@ -612,18 +615,12 @@ public class BlackjackController implements Initializable {
         if (!showLate) {
             bigTextVisibility();
         }
-        /*
-         * if (leikmennManager.isGamefinished()) {
-         * showPlayButtons(false);
-         * return;
-         * }
-         * delay(3000, this::changeLeikmadur);
-         */
     }
 
     private void disableUserActions(boolean disable) {
         fxPlayButtons.setDisable(disable);
         fxStopButtons.setDisable(disable);
+        fxSurrenderButton.setDisable(disable);
         if (disable) {
             for (Node button : fxPlayButtons.getChildren()) {
                 button.setOpacity(0.8);
@@ -633,6 +630,8 @@ public class BlackjackController implements Initializable {
                 button.setOpacity(0.8);
                 button.setStyle("-fx-background-color: " + BUTTONPRESSEDCOLOR + ";" + BUTTONSTYLEPARAMS);
             }
+            fxSurrenderButton.setOpacity(0.8);
+            fxSurrenderButton.setStyle("-fx-background-color: " + BUTTONPRESSEDCOLOR + ";" + BUTTONSTYLEPARAMS);
             return;
         }
         for (Node button : fxPlayButtons.getChildren()) {
@@ -643,6 +642,8 @@ public class BlackjackController implements Initializable {
             button.setOpacity(1);
             button.setStyle("-fx-background-color: " + BUTTONCOLOR + ";" + BUTTONSTYLEPARAMS);
         }
+        fxSurrenderButton.setOpacity(1);
+        fxSurrenderButton.setStyle("-fx-background-color: " + BUTTONCOLOR + ";" + BUTTONSTYLEPARAMS);
     }
 
     /**
@@ -676,23 +677,31 @@ public class BlackjackController implements Initializable {
             fxStopButtons.setVisible(false);
             fxPlayButtons.setPrefWidth(1280);
             fxPlayButtons.setVisible(true);
+            ((HBox) fxSurrenderButton.getParent()).setPrefWidth(320);
+            ((HBox) fxSurrenderButton.getParent()).setVisible(true);
         } else {
             Logger.info("Displayed continue buttons, called from {}", leikmennManager.getCurrentLeikmadur());
             fxPlayButtons.setPrefWidth(0);
             fxPlayButtons.setVisible(false);
             fxStopButtons.setPrefWidth(1280);
             fxStopButtons.setVisible(true);
+            ((HBox) fxSurrenderButton.getParent()).setPrefWidth(0);
+            ((HBox) fxSurrenderButton.getParent()).setVisible(false);
         }
 
     }
 
     private void hideSurrender(boolean hide) {
         if (hide) {
-            fxSurrenderButton.setPrefWidth(0);
-            fxSurrenderButton.setVisible(false);
+            fxPlayButtons.setPrefWidth(1280);
+            for (Node button : fxPlayButtons.getChildren()) {
+                ((Button) button).setPrefWidth(1280 / 3);
+            }
         } else {
-            fxSurrenderButton.setPrefWidth(320);
-            fxSurrenderButton.setVisible(true);
+            fxPlayButtons.setPrefWidth(960);
+            for (Node button : fxPlayButtons.getChildren()) {
+                ((Button) button).setPrefWidth(320);
+            }
         }
     }
 
@@ -716,6 +725,9 @@ public class BlackjackController implements Initializable {
     }
 
     private void changeLeikmadur() {
+        if (leikmennManager.getAmountOfLeikmen() == 1) {
+            return;
+        }
         Logger.info("Changed player from: {}", leikmennManager.getCurrentLeikmadur());
 
         // Fela spil leikmannsins sem var að gera
@@ -742,7 +754,9 @@ public class BlackjackController implements Initializable {
         fxPlayerName.setText(leikmennManager.getCurrentLeikmadur().getNafn());
         fxBetTotal.setText(TOTAL + String.valueOf(leikmennManager.getCurrentLeikmadur().getBetTotal()));
         fxPlayerTotal.setText(Integer.toString(leikmennManager.getCurrentLeikmadur().getSamtals()));
+        disableUserActions(false);
         bigTextVisibility();
+
         if (leikmennManager.getCurrentLeikmadur().isCanSurrender()) {
             newLeikmadurGame();
         }
