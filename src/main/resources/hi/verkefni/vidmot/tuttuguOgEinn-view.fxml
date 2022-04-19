@@ -100,6 +100,11 @@
                         <Font name="Colonna MT" size="30.0" />
                      </font>
                   </Button>
+                  <Button fx:id="fxSurrenderButton" mnemonicParsing="false" onAction="#SurrenderHandler" onMousePressed="#ButtonColorChangerP" onMouseReleased="#ButtonColorChangerR" prefHeight="65.0" prefWidth="426.66" style="-fx-background-color: #bd132f; -fx-border-color: #000000; -fx-border-width: 3px; -fx-border-radius: 3px;" text="SURRENDER" textFill="#b5ad3c">
+                     <font>
+                        <Font name="Colonna MT" size="30.0" />
+                     </font>
+                  </Button>
                </children>
             </HBox>
             <HBox fx:id="fxStopButtons" maxWidth="-Infinity" minWidth="-Infinity" prefHeight="65.0" prefWidth="0.0">

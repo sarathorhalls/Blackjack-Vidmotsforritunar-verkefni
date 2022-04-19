@@ -24,6 +24,7 @@ public class Leikmadur implements LeikmadurInterface {
     private boolean gameOver;
     private boolean stand;
     private boolean dd;
+    private boolean surrendered;
 
     /**
      * Constructor
@@ -101,11 +102,16 @@ public class Leikmadur implements LeikmadurInterface {
         gameOver = false;
         dd = false;
         stand = false;
+        surrendered = false;
     }
 
     public void changeTotal(int change) {
         if (dd) {
             betTotal += 2 * change;
+            return;
+        }
+        if (surrendered) {
+            betTotal += (int) (0.5 * change);
             return;
         }
         betTotal += change;
@@ -197,10 +203,6 @@ public class Leikmadur implements LeikmadurInterface {
         return betTotal;
     }
 
-    public boolean isDd() {
-        return dd;
-    }
-
     public void setDd(boolean dd) {
         this.dd = dd;
     }
@@ -215,5 +217,9 @@ public class Leikmadur implements LeikmadurInterface {
 
     public String toString() {
         return this.name;
+    }
+
+    public void setSurrendered(boolean surrendered) {
+        this.surrendered = surrendered;
     }
 }

@@ -28,6 +28,7 @@ public class LeikmennManager {
     }
 
     public SpilV addCardToLeikmadur(boolean isDealer) {
+        // TODO: handle if all 6 decks are finished
         SpilV card = deck.dragaSpil();
         if (isDealer) {
             dealer.gefaSpil(card);
@@ -53,13 +54,13 @@ public class LeikmennManager {
     }
 
     // Getters and setters
-    public boolean isGamefinished() {
+    public boolean isAllLeikmadurGameOver() {
         for (Leikmadur leikmadur : leikmenn) {
-            if (leikmadur.isGameOver()) {
-                return true;
+            if (!leikmadur.isGameOver()) {
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     public boolean isOtherLeikmadursStillCanDo() {
@@ -67,7 +68,7 @@ public class LeikmennManager {
             if (leikmadur == leikmenn[currentlySelected]) {
                 continue;
             }
-            if (leikmadur.isCanDo()) {
+            if (leikmadur.isCanDo() && !leikmadur.isStand()) {
                 return true;
             }
         }
@@ -120,18 +121,11 @@ public class LeikmennManager {
         return true;
     }
 
-    public boolean getAllStandingAndCanDo() {
-        for (Leikmadur leikmadur : leikmenn) {
-            if (!leikmadur.isStand() && leikmadur.isCanDo()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     public void setAllLeikmennCanDo() {
         for (Leikmadur leikmadur : leikmenn) {
-            leikmadur.setCanDo(true);
+            if (!leikmadur.isStand()) {
+                leikmadur.setCanDo(true);
+            }
         }
     }
 }
