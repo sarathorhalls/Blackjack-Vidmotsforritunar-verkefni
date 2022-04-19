@@ -15,7 +15,9 @@ import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.TextFormatter.Change;
+import javafx.util.Duration;
 import javafx.util.converter.IntegerStringConverter;
 import javafx.scene.control.ButtonBar;
 
@@ -32,6 +34,8 @@ public class LeikmennDialog extends DialogPane {
     private TextField fxVed;
     @FXML
     private CheckBox fxCheckbox;
+    @FXML
+    private Tooltip fxVirkurTooltip;
     @FXML
     private ButtonType fxOk;
     @FXML
@@ -65,6 +69,8 @@ public class LeikmennDialog extends DialogPane {
             }
             return null;
         };
+
+        fxVirkurTooltip.setShowDelay(Duration.millis(100));
 
         fxVed.setTextFormatter(new TextFormatter<Integer>(new IntegerStringConverter(), 100, integerFilter));
         Stig[] stigatafla = new Stigatafla().getStigArray();
